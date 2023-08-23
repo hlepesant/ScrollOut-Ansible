@@ -1,6 +1,6 @@
 # scrolloutf1
 
-Deploy ScrolloutF2 on recent Debian release.  
+Deploy ScrolloutF1 on recent Debian release.  
 
 Ansible translation of the install.sh script.
 
