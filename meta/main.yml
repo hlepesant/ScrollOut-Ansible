@@ -1,0 +1,20 @@
+---
+galaxy_info:
+  role_name: 'scrolloutf1'
+  author: 'Hugues Lepesant <hugues@lepesant.com>'
+  description: 'Install and configure ScrolllOutF1 on recent debian'
+  license: whatever my boss says
+  min_ansible_version: "4.0.0"
+  platforms:
+    - name: Debian
+      versions:
+        - bullseye
+        # - bookworm
+  galaxy_tags:
+    - system
+    - mail
+    - gateway
+# don't include dependencies here as all role should be pined to a version
+dependencies: []
+# on the contrary dependencies should be defined in README
+# and in molecule/default/requirements.yml (without version pinning)

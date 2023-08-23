@@ -1,0 +1,139 @@
+---
+scrollout_document_root: /var/www
+scrollout_first_packages:
+  - postfix
+  - amavisd-new
+  - spamassassin
+  - nginx
+  - sudo
+  - python3-cryptography
+  - haveged
+
+scrollout_quaga_packages:
+  - http://ftp.fr.debian.org/debian/pool/main/r/readline/libreadline7_7.0-5_amd64.deb
+  - https://mirror.ip-projects.de/debian/pool/main/q/quagga/quagga-core_1.2.4-3_amd64.deb
+  - https://mirror.ip-projects.de/debian/pool/main/q/quagga/quagga-isisd_1.2.4-3_amd64.deb
+  - https://mirror.ip-projects.de/debian/pool/main/q/quagga/quagga-ospf6d_1.2.4-3_amd64.deb
+  - https://mirror.ip-projects.de/debian/pool/main/q/quagga/quagga-ospfd_1.2.4-3_amd64.deb
+  - https://mirror.ip-projects.de/debian/pool/main/q/quagga/quagga-pimd_1.2.4-3_amd64.deb
+  - https://mirror.ip-projects.de/debian/pool/main/q/quagga/quagga-ripd_1.2.4-3_amd64.deb
+  - https://mirror.ip-projects.de/debian/pool/main/q/quagga/quagga-ripngd_1.2.4-3_amd64.deb
+  - https://mirror.ip-projects.de/debian/pool/main/q/quagga/quagga_1.2.4-3_amd64.deb
+  - https://mirror.ip-projects.de/debian/pool/main/q/quagga/quagga-bgpd_1.2.4-3_amd64.deb
+
+scrollout_packages:
+  - cpanminus
+  - debian-keyring
+  - debian-archive-keyring
+  - arc
+  - unattended-upgrades
+  - apt-listchanges
+  - apache2-utils
+  - altermime
+  - arj
+  - binutils
+  - build-essential
+  - bzip2
+  - bash
+  - ca-certificates
+  - cabextract
+  - catdoc
+  - cpio
+  - cryptsetup
+  - clamav-daemon
+  - clamav-freshclam
+  - dnsutils
+  - dovecot-common
+  - file
+  - fail2ban
+  - getmail6
+  - giflib-tools
+  - gifsicle
+  - gocr
+  - gzip
+  - gawk
+  - imagemagick
+  - rsyslog
+  - inetutils-syslogd
+##  - incron
+  - jlha-utils
+  - libc-bin
+  - libc6
+  - libio-socket-ip-perl
+  - libcompress-raw-zlib-perl
+  - libgeo-ip-perl
+  - libgeo-ipfree-perl
+  - libencode-detect-perl
+  - libdigest-sha-perl
+  - libdbd-mysql-perl
+  - libdbi-perl
+  - libencode-detect-perl
+  - libio-socket-inet6-perl
+  - libio-socket-ssl-perl
+  - libmail-spf-perl
+  - libnet-patricia-perl
+  - libmldbm-sync-perl
+  - libnet-dns-perl
+  - libnet-ident-perl
+  - libstring-approx-perl
+  - libtie-cache-perl
+  - lockfile-progs
+  - lrzip
+  - libdigest-sha-perl
+  - libdigest-sha3-perl
+  - liblz4-tool
+  - lvm2
+  - lzop
+  - lzma
+  - lrzip
+  - liblz4-tool
+  - melt
+  - mpack
+  - netpbm
+  - nomarch
+  - ntpdate
+  - ocrad
+  - openssl
+  - openssh-server
+  - pciutils
+  - p7zip-full
+  - p7zip
+  - pax
+  - poppler-utils
+  - pyzor
+  - python3-pip
+  - redis-server
+  - amavisd-new
+  - clamav-daemon
+  - nginx-extras
+  - mailgraph
+  - ntpdate
+  - php-fpm
+  - postfix
+  - cifs-utils
+  - tzdata
+  - postfix-ldap
+  - postfix-pcre
+  - rbldnsd
+  - postfix-policyd-spf-python
+  - postsrsd
+  - libtext-csv-xs-perl
+
+# sudo apt-get update || apt-get install sudo -y && sudo apt-get update;
+# sudo apt-get autoremove --purge apache2 -y
+# sudo apt-get autoremove resolvconf -y
+# sudo apt-get autoremove avahi-daemon -y
+# sudo apt-get autoremove samba -y
+# sudo apt-get autoremove rpcbind -y
+
+scrollout_mail_domain: "{{ ansible_domain }}"
+scrollout_ssl_organization: NA
+scrollout_ssl_hostname: localhost
+scrollout_ssl_domain: localdomain
+
+scrollout_php_version: '7.4'
+
+scrollout_quagga_password: "dahsohx6baidaed6ohlahquoi2YooChiath"
+
+# Run on host : perl -MIP::Country::Fast -e '$_=$INC{\"IP/Country/Fast.pm\"};s/\.pm/\n/;print';'
+scrollout_geo_dir: "/usr/local/share/perl/5.32.1/IP/Country/Fast"

@@ -1,0 +1,15 @@
+---
+- name: Restart Mailgraph
+  ansible.builtin.service:
+    name: mailgraph
+    state: restarted
+
+- name: Restart Nginx
+  ansible.builtin.service:
+    name: nginx
+    state: restarted
+
+- name: Restart Php
+  ansible.builtin.service:
+    name: php{{ scrollout_php_version }}-fpm
+    state: restarted

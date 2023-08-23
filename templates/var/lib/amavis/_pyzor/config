@@ -1,0 +1,3 @@
+[client]
+ReportThreshold = 0
+WhitelistThreshold = 0

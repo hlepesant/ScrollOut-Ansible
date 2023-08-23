@@ -1,3 +1,0 @@
-[submodule "molecule/.shared"]
-	path = molecule/.shared
-	url = git@git.fr.clara.net:claranet/spp/projects/ansible/common-molecule.git

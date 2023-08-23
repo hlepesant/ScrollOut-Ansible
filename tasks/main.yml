@@ -1,0 +1,637 @@
+---
+- name: Add backport Repo
+  ansible.builtin.apt_repository:
+    repo: "deb http://deb.debian.org/debian {{ ansible_distribution_release | lower }}-backports main contrib non-free"
+    state: present
+
+- name: Install first packages
+  ansible.builtin.apt:
+    name: "{{ scrollout_first_packages }}"
+
+- name: Test postsrsd.secret
+  ansible.builtin.stat:
+    path: /etc/postsrsd.secret
+  register: _postsrsd_secret
+
+- name: Generate postsrsd.secret
+  when: not _postsrsd_secret.stat.exists
+  ansible.builtin.lineinfile:
+    path: /etc/postsrsd.secret
+    line: "{{ lookup('community.general.random_string', min_lower=1, min_upper=1, min_special=1, min_numeric=1, , length=30) }}"
+
+- name: Create /usr/lib/postsrsd
+  ansible.builtin.file:
+    path: /usr/lib/postsrsd
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Create /etc/default/postsrsd
+  ansible.builtin.template:
+    src: etc/default/postsrsd
+    dest: /etc/default/postsrsd
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Install somes packages
+  ansible.builtin.apt:
+    name: "{{ scrollout_packages }}"
+
+- name: Install Quaga
+  ansible.builtin.apt:
+    deb: "{{ item }}"
+  loop: "{{ scrollout_quaga_packages }}"
+
+- name: Install CPAN modules
+  community.general.cpanm:
+    name: "IP::Country"
+
+- name: sa-update
+  ansible.builtin.command:
+    cmd: /usr/bin/sa-update
+  failed_when: false
+
+- name: add user clamav to group amavis
+  ansible.builtin.user:
+    name: clamav
+    groups: amavis
+    append: true
+
+- name: add user amavis to group clamav
+  ansible.builtin.user:
+    name: amavis
+    groups: clamav
+    append: true
+
+- name: Create /var/lib/.pyzor/
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: root
+    group: root
+    mode: 0755
+  loop:
+    - /var/lib/.pyzor/
+    - /var/lib/amavis/.pyzor/
+
+- name: Create /var/lib/.pyzor/config
+  ansible.builtin.template:
+    src: var/lib/_pyzor/config
+    dest: /var/lib/.pyzor/config
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Create /var/lib/amavis/.pyzor/config
+  ansible.builtin.template:
+    src: var/lib/amavis/_pyzor/config
+    dest: /var/lib/amavis/.pyzor/config
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Create /var/lib/.pyzor/pyzord.access
+  ansible.builtin.template:
+    src: var/lib/_pyzor/pyzord.access
+    dest: /var/lib/.pyzor/pyzord.access
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Create /var/lib/amavis/.pyzor/servers
+  ansible.builtin.template:
+    src: var/lib/amavis/_pyzor/servers
+    dest: /var/lib/amavis/.pyzor/servers
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Create /var/spool/disclaimers
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: nobody
+    group: nogroup
+    mode: 0755
+  loop:
+    - /var/spool/disclaimers
+    - /var/spool/filter
+
+- name: Create /var/spool/filter/servers
+  ansible.builtin.template:
+    src: var/spool/filter/servers
+    dest: /var/spool/filter/servers
+    owner: nobody
+    group: nogroup
+    mode: 0644
+
+- name: Remove /var/www/html/index.nginx-debian.html
+  ansible.builtin.file:
+    path: /var/www/html/index.nginx-debian.html
+    state: absent
+
+- name: Unarchive ScrollOutF1
+  ansible.builtin.unarchive:
+    src: scrolloutf1_site.tar.gz
+    dest: "{{ scrollout_document_root | dirname }}"
+    owner: www-data
+    group: www-data
+
+- name: ln -sf /etc/amavis {{ scrollout_document_root }}/amavis
+  ansible.builtin.file:
+    src: /etc/amavis
+    dest: "{{ scrollout_document_root }}/amavis"
+    state: link
+    force: true
+    owner: www-data
+    group: www-data
+
+- name: ln -sf /var/log {{ scrollout_document_root }}/log
+  ansible.builtin.file:
+    src: /var/log
+    dest: "{{ scrollout_document_root }}/log"
+    state: link
+    force: true
+    owner: www-data
+    group: www-data
+
+- name: ln -sf /etc/postfix {{ scrollout_document_root }}/postfix
+  ansible.builtin.file:
+    src: /etc/postfix
+    dest: "{{ scrollout_document_root }}/postfix"
+    state: link
+    force: true
+    owner: www-data
+    group: www-data
+
+- name: ln -sf /etc/mail/spamassassin {{ scrollout_document_root }}/spamassassin
+  ansible.builtin.file:
+    src: /etc/mail/spamassassin
+    dest: "{{ scrollout_document_root }}/spamassassin"
+    state: link
+    force: true
+    owner: www-data
+    group: www-data
+
+- name: ln -sf /var/log/mail.log {{ scrollout_document_root }}/mail.log
+  ansible.builtin.file:
+    src: /var/log/mail.log
+    dest: "{{ scrollout_document_root }}/mail.log"
+    state: link
+    force: true
+    owner: www-data
+    group: www-data
+
+- name: fuzzyocr - unarchive
+  ansible.builtin.unarchive:
+    src: "{{ scrollout_document_root }}/cfg/geo/fuzzyocr-3.5.1-devel.tar.gz"
+    dest: /usr/src/
+    remote_src: true
+
+- name: fuzzyocr - move
+  ansible.builtin.command:
+    cmd: mv {{ item }} /etc/mail/spamassassin/
+  args:
+    chdir: /usr/src/FuzzyOcr-3.5.1
+    creates: /etc/mail/spamassassin/{{ item }}
+  loop:
+    -  FuzzyOcr
+    -  FuzzyOcr.cf
+    -  FuzzyOcr.mysql
+    -  FuzzyOcr.pm
+    -  FuzzyOcr.preps
+    -  FuzzyOcr.scansets
+
+- name: sed -i "/sa-clean/d" /etc/cron.d/amavisd-new
+  ansible.builtin.lineinfile:
+    path: /etc/cron.d/amavisd-new
+    regexp: 'sa-clean'
+    state: absent
+
+- name: Root Crontab
+  ansible.builtin.blockinfile:
+    path: /var/spool/cron/crontabs/root
+    block: |
+      SHELL=/bin/bash
+      PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+      */3 * * * * /usr/bin/nice -n 19 {{ scrollout_document_root }}/bin/fetch.sh > /dev/null 2>&1
+      */59 * * * * /usr/bin/nice -n 19 {{ scrollout_document_root }}/bin/fetch.sh inbox > /dev/null 2>&1
+      */7 * * * * /usr/bin/nice -n 19 {{ scrollout_document_root }}/bin/fetch.sh queue > /dev/null 2>&1
+      0 0 1 1 * logrotate -f /etc/logrotate.d/rsyslog
+      0 1 1 1 * /etc/init.d/mailgraph restart > /dev/null 2>&1
+      0 */1 * * * chown www-data /var/log/mail.log > /dev/null 2>&1
+      0 */1 * * * {{ scrollout_document_root }}/bin/dns.sh > /dev/null 2>&1
+      # 0 23 * * * [[ `find /var/lib/amavis/.spamassassin/bayes_{seen,toks} -type f -size +40M > /dev/null 2>&1` ]] && /usr/bin/nice -n 10 su - amavis -c "sa-learn --force-expire" > /dev/null 2>&1
+      @reboot {{ scrollout_document_root }}/bin/scrollout.sh traffic > /dev/null 2>&1
+      0 1 * * * /usr/bin/nice -n 19 find /var/lib/amavis/virusmails/ -mtime +30 -delete > /dev/null 2>&1
+      0 1 * * * /usr/bin/nice -n 19 find /var/lib/amavis/tmp/ -mtime +30 -delete > /dev/null 2>&1
+      0 2 * * * /usr/bin/nice -n 19 find /backup/scrolloutf1* -type f -mtime +180 -delete > /dev/null 2>&1
+      0 3 * * * /usr/bin/nice -n 19 find /var/log/mail.* -type f -mtime +365 -delete > /dev/null 2>&1
+      0 4 * * * /usr/bin/nice -n 19 find {{ scrollout_document_root }}/fetch/ -type f -mtime +7 -delete > /dev/null 2>&1
+      0 23 * * 5 /usr/bin/nice -n 19 tar -zcvf /backup/scrolloutf1.weekly.tar.gz {{ scrollout_document_root }} --exclude="fetch" > /dev/null 2>&1
+    create: true
+    owner: root
+    group: crontab
+    mode: 0600
+
+- name: Ntpdate Crontab
+  ansible.builtin.blockinfile:
+    path: /etc/cron.hourly/ntpdate
+    block: |
+      #!/bin/bash
+      ntpdate -u time.nist.gov time.windows.com ntp.ubuntu.com pool.ntp.org > /dev/null 2>&1
+    create: true
+    owner: root
+    group: crontab
+    mode: 0750
+
+- name: stat /var/lib/amavis/.spamassassin/auto-whitelist
+  ansible.builtin.stat:
+    path: /var/lib/amavis/.spamassassin/auto-whitelist
+  register: _auto_whitelist
+
+- name: rm /var/lib/amavis/.spamassassin/auto-whitelist
+  when: _auto_whitelist.stat.exists
+  ansible.builtin.file:
+    path: /var/lib/amavis/.spamassassin/auto-whitelist
+    state: absent
+
+- name: ScrollOutF1 Crontab
+  ansible.builtin.blockinfile:
+    path: /etc/cron.hourly/scrolloutf1
+    block: |
+      #!/bin/bash
+      /usr/bin/sa-update > /dev/null 2>&1
+      /etc/init.d/clamav-freshclam status > /dev/null 2>&1 || /etc/init.d/clamav-freshclam restart > /dev/null 2>&1
+      /usr/bin/freshclam > /dev/null 2>&1
+      /etc/init.d/clamav-daemon status > /dev/null 2>&1 || /etc/init.d/clamav-daemon restart > /dev/null 2>&1
+      {{ scrollout_document_root }}/bin/update.sh  > /dev/null 2>&1
+    create: true
+    owner: root
+    group: crontab
+    mode: 0750
+
+- name: rm some crontab
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /etc/cron.daily/scrolloutf1
+    - /etc/cron.daily/clamav
+
+- name: Create /etc/postfix/certs
+  ansible.builtin.file:
+    path: /etc/postfix/certs
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Postfix server KEY
+  community.crypto.openssl_privatekey:
+    path: /etc/postfix/certs/server.key
+    type: RSA
+    size: 4096
+
+- name: Postfix server CSR
+  community.crypto.openssl_csr:
+    path: /etc/postfix/certs/server.csr
+    privatekey_path: /etc/postfix/certs/server.key
+    organization_name: "{{ scrollout_ssl_organization }}"
+    common_name: "{{ scrollout_ssl_hostname }}.{{ scrollout_ssl_domain }}"
+
+- name: Postfix server CRT
+  community.crypto.x509_certificate:
+    path: /etc/postfix/certs/server.crt
+    privatekey_path: /etc/postfix/certs/server.key
+    csr_path: /etc/postfix/certs/server.csr
+    provider: selfsigned
+    selfsigned_digest: "sha384"
+
+- name: Create /usr/lib/cgi-bin
+  ansible.builtin.file:
+    path: /usr/lib/cgi-bin
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Copy /var/www/cgi-bin/mailgraph.cgi
+  ansible.builtin.copy:
+    src: "{{ scrollout_document_root }}/cgi-bin/mailgraph.cgi"
+    dest: /usr/lib/cgi-bin/mailgraph.cgi
+    remote_src: true
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Create /etc/dovecot/private
+  ansible.builtin.file:
+    path: /etc/dovecot/private
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Dovecot private KEY
+  community.crypto.openssl_privatekey:
+    path: /etc/dovecot/private/dovecot.pem
+    type: RSA
+    size: 4096
+
+- name: Dovecot CSR
+  community.crypto.openssl_csr:
+    path: /etc/dovecot/dovecot.csr
+    privatekey_path: /etc/dovecot/private/dovecot.pem
+    organization_name: "{{ scrollout_ssl_organization }}"
+    common_name: "{{ scrollout_ssl_hostname }}.{{ scrollout_ssl_domain }}"
+
+- name: Dovecot CRT
+  community.crypto.x509_certificate:
+    path: /etc/dovecot/dovecot.pem
+    privatekey_path: /etc/dovecot/private/dovecot.pem
+    csr_path: /etc/dovecot/dovecot.csr
+    provider: selfsigned
+    selfsigned_digest: "sha384"
+
+- name: ScrollOut server KEY
+  community.crypto.openssl_privatekey:
+    path: /etc/postfix/certs/scrollout.key
+    type: RSA
+    size: 4096
+    owner: root
+    group: www-data
+    mode: 0664
+
+- name: ScrollOut server CSR
+  community.crypto.openssl_csr:
+    path: /etc/postfix/certs/scrollout.csr
+    privatekey_path: /etc/postfix/certs/scrollout.key
+    organization_name: "{{ scrollout_ssl_organization }}"
+    common_name: "{{ scrollout_ssl_hostname }}.{{ scrollout_ssl_domain }}"
+
+- name: ScrollOut server CRT
+  community.crypto.x509_certificate:
+    path: /etc/postfix/certs/scrollout.cert
+    privatekey_path: /etc/postfix/certs/scrollout.key
+    csr_path: /etc/postfix/certs/scrollout.csr
+    provider: selfsigned
+    selfsigned_digest: "sha384"
+
+- name: cp /etc/postfix/certs/scrollout.cert /usr/share/ca-certificates/
+  ansible.builtin.copy:
+    src: /etc/postfix/certs/scrollout.cert
+    dest: /usr/share/ca-certificates/scrollout.cert
+    remote_src: true
+    owner: root
+    group: www-data
+    mode: 0600
+
+# crypto module does not work with this syntax
+- name: /usr/local/bin/make_dsa_cert.sh
+  ansible.builtin.template:
+    src: usr/local/bin/make_dsa_cert.sh
+    dest: /usr/local/bin/make_dsa_cert.sh
+    owner: root
+    group: root
+    mode: 0755
+
+- name: ScrollOut DSA CERT
+  ansible.builtin.command:
+    cmd: /usr/local/bin/make_dsa_cert.sh
+  args:
+    creates: /etc/postfix/certs/scrollout-dsa.cert
+
+- name: cp /etc/postfix/certs/scrollout-dsa.cert /usr/share/ca-certificates/
+  ansible.builtin.copy:
+    src: /etc/postfix/certs/scrollout-dsa.cert
+    dest: /usr/share/ca-certificates/scrollout-dsa.cert
+    remote_src: true
+    owner: root
+    group: www-data
+    mode: 0664
+
+# crypto module does not work with this syntax
+- name: /usr/local/bin/make_ecdsa_cert.sh
+  ansible.builtin.template:
+    src: usr/local/bin/make_ecdsa_cert.sh
+    dest: /usr/local/bin/make_ecdsa_cert.sh
+    owner: root
+    group: root
+    mode: 0755
+
+- name: ScrollOut EC DSA CERT
+  ansible.builtin.command:
+    cmd: /usr/local/bin/make_ecdsa_cert.sh
+  args:
+    creates: /etc/postfix/certs/scrollout-ecdsa.cert
+
+- name: cp /etc/postfix/certs/scrollout-ecdsa.cert /usr/share/ca-certificates/
+  ansible.builtin.copy:
+    src: /etc/postfix/certs/scrollout-ecdsa.cert
+    dest: /usr/share/ca-certificates/scrollout-ecdsa.cert
+    remote_src: true
+    owner: root
+    group: www-data
+    mode: 0600
+
+- name: openssl dhparam -out /etc/postfix/certs/dh_512|1024|2048.pem
+  community.crypto.openssl_dhparam:
+    size: "{{ item }}"
+    path: /etc/postfix/certs/dh_{{ item }}.pem
+  loop:
+    - 512
+    - 1024
+    - 2048
+
+- name: chmod 664 /etc/postfix/certs/scrollout*.{key,cert}
+  ansible.builtin.file:
+    path: /etc/postfix/certs/{{ item }}
+    owner: root
+    group: www-data
+    mode: 0664
+  loop:
+    - scrollout.cert
+    - scrollout.csr
+    - scrollout-dsa.cert
+    - scrollout-dsa.key
+    - scrollout-ecdsa.cert
+    - scrollout-ecdsa.csr
+    - scrollout-ecdsa.key
+    - scrollout.key
+
+- name: /usr/sbin/update-ca-certificates
+  ansible.builtin.command:
+    cmd: /usr/sbin/update-ca-certificates
+
+- name: rm /etc/nginx/sites-enabled/default
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+
+- name: /etc/nginx/sites-available/scrollout.conf 
+  ansible.builtin.template:
+    src: etc/nginx/sites-available/scrollout.conf
+    dest: /etc/nginx/sites-available/scrollout.conf
+    owner: www-data
+    group: www-data
+    mode: 0644
+  notify: Restart Nginx
+
+- name: ln -sf /etc/nginx/sites-available/scrollout.conf /etc/nginx/sites-enable/scrollout.conf
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/scrollout.conf
+    dest: /etc/nginx/sites-enabled/scrollout.conf
+    state: link
+    force: true
+    owner: www-data
+    group: www-data
+
+- name: /etc/nginx/conf.d/fcgiwrap.conf
+  ansible.builtin.template:
+    src: etc/nginx/conf.d/fcgiwrap.conf
+    dest: /etc/nginx/conf.d/fcgiwrap.conf
+    owner: www-data
+    group: www-data
+    mode: 0755
+
+- name: /etc/php/*/fpm/php.ini
+  ansible.builtin.template:
+    src: etc/php/{{ scrollout_php_version }}/fpm/php.ini
+    dest: /etc/php/{{ scrollout_php_version }}/fpm/php.ini
+    owner: root
+    group: root
+    mode: 0644
+  notify: Restart Php
+
+- name: /etc/dovecot/conf.d/10-auth.conf
+  ansible.builtin.template:
+    src: etc/dovecot/conf.d/10-auth.conf
+    dest: /etc/dovecot/conf.d/10-auth.conf
+    owner: root
+    group: root
+    mode: 0644
+
+- name: /var/log/quagga
+  ansible.builtin.file:
+    path: /var/log/quagga
+    state: directory
+    owner: quagga
+    group: quagga
+    mode: 0755
+
+- name: Quagga config
+  ansible.builtin.template:
+    src: etc/quagga/{{ item }}
+    dest: /etc/quagga/{{ item }}
+    owner: quagga
+    group: quagga
+    mode: 0644
+  loop:
+    - bgpd.conf
+    - daemons.conf
+    - ospf6d.conf
+    - ospfd.conf
+    - zebra.conf
+
+- name: /etc/mail/spamassassin/FuzzyOcr
+  ansible.builtin.copy:
+    src: "{{ scrollout_document_root }}/cfg/fuzzy/{{ item }}"
+    dest: /etc/mail/spamassassin/{{ item }}
+    remote_src: true
+    owner: root
+    group: root
+    directory_mode: 0755
+    mode: 0644
+  loop:
+    - FuzzyOcr/
+    - FuzzyOcr.cf
+    - FuzzyOcr.mysql
+    - FuzzyOcr.pm
+    - FuzzyOcr.preps
+    - FuzzyOcr.scansets
+    - FuzzyOcr.words
+
+- name: "{{ scrollout_document_root }}/bin/rbldnsd.sh"
+  ansible.builtin.command:
+    cmd: "{{ scrollout_document_root }}/bin/rbldnsd.sh"
+  failed_when: false
+
+- name: /etc/default/mailgraph
+  ansible.builtin.template:
+    src: etc/default/mailgraph
+    dest: /etc/default/mailgraph
+    owner: root
+    group: root
+    mode: 0644
+  notify: Restart Mailgraph
+
+- name: /etc/sudoers.d/scrollout
+  ansible.builtin.template:
+    src: etc/sudoers.d/scrollout
+    dest: /etc/sudoers.d/scrollout
+    owner: root
+    group: root
+    mode: 0440
+
+- name: /var/www/html/spamassassin/*
+  ansible.builtin.template:
+    src: var/www/html/spamassassin/{{ item }}
+    dest: "{{ scrollout_document_root }}/spamassassin/{{ item }}"
+    owner: root
+    group: root
+    mode: 0644
+  loop:
+    - v320.pre
+    - sa-compile.pre
+
+- name: Copy /var/www/html/cfg/geo/*.gif
+  ansible.builtin.copy:
+    src: "{{ scrollout_document_root }}/cfg/geo/{{ item }}"
+    dest: "{{ scrollout_geo_dir }}/{{ item }}"
+    remote_src: true
+    owner: root
+    group: root
+    mode: 0755
+  loop:
+    - cc.gif
+    - ip.gif
+
+- name: /var/www/html/ver
+  ansible.builtin.copy:
+    dest: "{{ scrollout_document_root }}/ver"
+    content: "{{ ansible_date_time.date }}"
+    owner: www-data
+    group: www-data
+    mode: 0644
+
+- name: /etc/postfix/sndr
+  ansible.builtin.file:
+    path: /etc/postfix/sndr
+    state: touch
+    owner: root
+    group: root
+    mode: 0644
+
+- name: fix perm right
+  ansible.builtin.file:
+    path: "{{ scrollout_document_root }}"
+    owner: www-data
+    group: www-data
+    mode: u=rwX,g=rX,o=rX
+    recurse: true
+
+- name: fix perm right nobody
+  ansible.builtin.file:
+    path: "{{ scrollout_document_root }}/{{ item }}"
+    owner: nobody
+  loop:
+    - bin/spawn.sh
+    - bin/policy.sh
+    - bin/smtp_tls_policy.sh
+
+# - name: Get amais user info
+#   ansible.builtin.user:
+#     name: amavis
+#   register: _amavis

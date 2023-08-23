@@ -1,0 +1,4 @@
+# {{ ansible_managed }}
+User_Alias WWW = www-data
+Cmnd_Alias SO = /sbin/ip, /usr/bin/awk, /sbin/ifconfig, /sbin/route, /usr/bin/tr, {{ scrollout_document_root }}/bin/*.sh
+WWW ALL=NOPASSWD: SO

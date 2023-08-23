@@ -1,0 +1,4 @@
+# Rule2XSBody - speedup by compilation of ruleset to native code
+# {{ ansible_managed }}
+# 
+loadplugin Mail::SpamAssassin::Plugin::Rule2XSBody

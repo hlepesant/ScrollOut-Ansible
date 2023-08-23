@@ -1,0 +1,7 @@
+[server]
+Engine = redis
+DigestDB = localhost,6379,,10
+
+[client]
+ReportThreshold = 0
+WhitelistThreshold = 0
